@@ -10,43 +10,105 @@
   <body>
     <h1>US COVID TRACKER</h1>
     <section>
-        <svg class="covid-history"></svg> 
+      <svg class="covid-history"></svg>
     </section>
     <section>
-        <svg class="us-map"></svg> 
+      <svg class="us-map"></svg>
     </section>
     <section>
-        <svg class="covid-trend"></svg> 
+      <svg class="covid-trend"></svg>
     </section>
 
     <script>
-
-    // Global variable for all data
-    let us_data, states_data;
-    d3.csv("./data/us.csv").then((d) => {
+      // Global variable for all data
+      let us_data, states_data;
+      d3.csv("./data/us.csv").then((d) => {
         us_data = d;
-        console.log(us_data);
         createCovidHistory(".covid-history");
-    });
-    d3.csv("./data/us-states.csv").then((d) => {
+      });
+      d3.csv("./data/us-states.csv").then((d) => {
         states_data = d;
-        console.log(states_data);
-    })
+        // console.log(states_data);
+      });
 
-    // Create Covid spread history 
-    const createCovidHistory = (svgSelector) => {
-        const margin = { top: 40, bottom: 10, left: 120, right: 20 };
-        const width = 800 - margin.left - margin.right;
+      // Create Covid spread history
+      const createCovidHistory = (svgSelector) => {
+        const margin = { top: 40, bottom: 20, left: 320, right: 0 };
+        const width = 1500 - margin.left - margin.right;
         const height = 600 - margin.top - margin.bottom;
 
         const svg = d3
-        .selectAll(svgSelector)
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom);
+          .selectAll(svgSelector)
+          .attr("width", width + margin.left + margin.right)
+          .attr("height", height + margin.top + margin.bottom);
 
         // Group used to enforce margin
-        const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
-    }
+        const g = svg
+          .append("g")
+          .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        const timeParse = d3.timeParse("%Y-%m-%d");
+        const timeFormat = d3.timeFormat("%b-%d");
+        const valueFormat = d3.format(".2s");
+        us_data.forEach((d) => {
+          d.date = timeParse(d.date);
+          d.cases = parseInt(d.cases);
+          d.deaths = parseInt(d.deaths);
+        });
+        console.log(us_data);
+
+        const x = d3
+          .scaleTime()
+          .domain(d3.extent(us_data, (d) => d.date))
+          .range([0, width]);
+        const y = d3
+          .scaleLinear()
+          .domain([0, d3.max(us_data, (d) => d.cases)])
+          .range([height, 0]);
+
+        const xaxis = d3.axisBottom().scale(x).tickFormat(timeFormat).ticks(20);
+        const g_xaxis = g
+          .append("g")
+          .attr("class", "x axis")
+          .attr("transform", "translate(0," + height + ")");
+
+        const yaxis = d3
+          .axisLeft()
+          .scale(y)
+          .tickFormat((d) => valueFormat(d))
+          .ticks(10);
+        const g_yaxis = g.append("g").attr("class", "y axis");
+
+        g_xaxis.call(xaxis);
+        g_yaxis.call(yaxis);
+
+        g.append("path")
+          .datum(us_data)
+          .attr("class", "line")
+          .attr(
+            "d",
+            d3
+              .line()
+              .x((d) => {
+                return x(d.date);
+              })
+              .y((d) => {
+                return y(d.cases);
+              })
+          )
+
+          let path = g.selectAll(".line")
+          let totalLength = path.node().getTotalLength();
+
+          d3.select(path.node())
+          .attr("stroke-dasharray", totalLength + " " + totalLength ) 
+          .attr("stroke-dashoffset", totalLength)
+          .transition()
+          .duration(10000)
+          .ease(d3.easeLinear)
+          .attr("stroke-dashoffset", 0);
+      };
+
 
     </script>
   </body>
