@@ -1,0 +1,8 @@
+index,date,cases,deaths,title,label,description,dx,dy
+0,2020-01-21,1,0,January 21 2020,The first U.S. case was found,"A man who had returned from Wuhan was hospitalized for the virus in Washington state on January 21.",+50,-120
+52,2020-03-13,2224,50,March 13 2020,"President declared a nationwide emergency.","Friday, March 13, 2020, the President of the United States declared a National Emergency concerning the Novel Coronavirus Disease Outbreak.",+120,-120
+344,2020-12-30,19793777,342588,December 30 2020,"First U.S. case of UK variant reported","Colorado officials reported the first known US case of the COVID-19 variant that has swept across the UK, leading dozens of countries to restrict UK arrivals.",+50,-150
+417,2021-03-13,29419456,533928,March 13 2021,"Vaccinations have surpassed 100 million doses","The CDC reports their estimate that over 100 million total doses of COVID-19 vaccines have been administered in the United States.",+50,50 
+497,2021-06-01,33300482,594827,June 1 2021,"India first identified the variant, Delta","The Delta variant, first identified in India in late 2020, becomes the dominant variant in the U.S. The variant kicks off a third wave of infections during the summer of 2021.",+50,-100
+675,2021-11-26,48146553,777437,November 26 2021,"Omicron emerged","World Health Organization classifies a new variant, Omicron, as a variant of concern after it was first reported by scientists in South Africa. The variant has several mutations in the spike protein that concern scientists around the world.",+50,50
+768,2022-02-27,78834930,946883
