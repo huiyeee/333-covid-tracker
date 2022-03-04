@@ -28,7 +28,7 @@
       });
       d3.csv("./data/us-states.csv").then((d) => {
         states_data = d;
-        // console.log(states_data);
+        drawStateLiineChart(".covid-trend", "Oregon")
       });
 
       // Create Covid spread history
@@ -108,6 +108,114 @@
           .ease(d3.easeLinear)
           .attr("stroke-dashoffset", 0);
       };
+
+      const drawStateLiineChart = (svgSelector, stateName) => {
+        d3.selectAll(svgSelector + " > *").remove();
+
+        const margin = { top: 40, bottom: 40, left: 40, right: 80};
+        const stateChartWidth = 700 - margin.left - margin.right;
+        const stateChartHeight = 350 - margin.top - margin.bottom;
+
+        const stateChartSvg = d3
+          .selectAll(svgSelector)
+          .attr("width", stateChartWidth + margin.left + margin.right)
+          .attr("height", stateChartHeight + margin.top + margin.bottom);
+
+        const stateChartG = stateChartSvg
+          .append("g")
+          .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        const timeParse = d3.timeParse("%Y-%m-%d");
+        const timeFormat = d3.timeFormat("%y %b");
+        const valueFormat = d3.format(".2s");
+
+        const filterd = states_data.filter(function(d){
+          return d.state == stateName
+        });
+
+        filterd.forEach((d) => {
+          d.date = timeParse(d.date);
+          d.cases = parseInt(d.cases);
+          d.deaths = parseInt(d.deaths);
+        });
+
+        const stateChartX = d3
+          .scaleTime()
+          .domain(d3.extent(filterd, (d) => d.date))
+          .range([0, stateChartWidth]);
+        const stateChartY = d3
+          .scaleLinear()
+          .domain([0, d3.max(filterd, (d) => d.cases)])
+          .range([stateChartHeight, 0]);
+
+        const xaxis = d3
+          .axisBottom()
+          .scale(stateChartX)
+          .tickFormat(timeFormat)
+          .ticks(20);
+
+        const g_xaxis = stateChartG
+          .append("g")
+          .attr("class", "line-x-axis")
+          .attr("transform", "translate(0," + stateChartHeight + ")");
+
+        const yaxis = d3
+          .axisLeft()
+          .scale(stateChartY)
+          .tickFormat((d) => valueFormat(d))
+          .ticks(10);
+
+        const g_yaxis = stateChartG
+        .append("g")
+        .attr("class", "line-y-axis");
+
+        g_xaxis.call(xaxis).selectAll("text").style("text-anchor", "end").attr("transform", "rotate(-65)");
+        g_yaxis.call(yaxis);
+
+        stateChartG.append("path")
+          .datum(filterd)
+          .attr("class", "line")
+          .attr(
+            "d",
+            d3
+              .line()
+              .x((d) => {
+                return stateChartX(d.date);
+              })
+              .y((d) => {
+                return stateChartY(d.cases);
+              })
+          )
+
+        stateChartG.append("path")
+          .datum(filterd)
+          .attr("class", "death-line")
+          .attr(
+            "d",
+            d3
+              .line()
+              .x((d) => {
+                return stateChartX(d.date);
+              })
+              .y((d) => {
+                return stateChartY(d.deaths);
+              })
+          )
+            
+          stateChartSvg.append("text")
+            .attr("transform", "translate(" + (stateChartWidth + 45) + "," + (stateChartY(filterd[filterd.length - 1].cases) + margin.top) + ")")
+            .attr("dy", ".35em")
+            .attr("text-anchor", "start")
+            .style("fill", "steelblue")
+            .text("Total Cases")
+
+          stateChartSvg.append("text")
+            .attr("transform", "translate(" + (stateChartWidth + 45) + "," + (stateChartY(filterd[filterd.length - 1].deaths) + margin.top) + ")")
+            .attr("dy", ".35em")
+            .attr("text-anchor", "start")
+            .style("fill", "red")
+            .text("Total Deaths")
+      }
 
 
     </script>

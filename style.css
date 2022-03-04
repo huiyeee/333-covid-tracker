@@ -9,4 +9,10 @@
     stroke: #43FF43;
     stroke-width: 4px;
 }
+
+.death-line{
+  fill: none;
+  stroke: red;
+  stroke-width: 4px;
+}
   
