@@ -28,7 +28,7 @@
       });
       d3.csv("./data/us-states.csv").then((d) => {
         states_data = d;
-        drawStateLiineChart(".covid-trend", "Oregon")
+        drawStateLiineChart(".covid-trend", "California")
       });
 
       // Create Covid spread history
@@ -138,6 +138,12 @@
           d.cases = parseInt(d.cases);
           d.deaths = parseInt(d.deaths);
         });
+
+        stateChartSvg.append("text")
+            .attr("x", margin.left)             
+            .attr("y", margin.top - 10)
+            .style("font-size", "16px")
+            .text(stateName);
 
         const stateChartX = d3
           .scaleTime()
