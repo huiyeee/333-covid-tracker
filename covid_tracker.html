@@ -35,7 +35,7 @@
         Type: <select id="typeSelection" class="dropdown"></select><br>
       </div>
     </section>
-    <section>
+    <section class="us-map-sec">
       <div>
         Select: <select id="selection" class="dropdown"></select><br>
       </div>
@@ -448,7 +448,7 @@
         }
 
         function drawStates() {
-          var div = d3.select("body").append("div")
+          var div = d3.select(".us-map-sec").append("div")
                       .attr("class", "tooltip-donut")
                       .style("opacity", 0);   
           svg.selectAll("path")
@@ -483,9 +483,11 @@
                               + "Total deaths: " + deathDict[stateName] + "<br>" 
                               + "Death Rate: " + (100*deathDict[stateName]/popDict[stateName]).toFixed(2) + "%";
                   }
+                  console.log(div)
                   div.html(display)
-                      .style("left", (event.pageX + 10) + "px")
-                      .style("top", (event.pageY - 15) + "px");
+                      .style("position", "fixed")
+                      .style("left", (event.clientX + 10) + "px")
+                      .style("top", (event.clientY - 15) + "px");
                 })
                 .on('mouseout', function (d, i) {
                   d3.select(this).transition()

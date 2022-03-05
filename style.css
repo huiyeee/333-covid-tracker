@@ -99,3 +99,8 @@ h2 {
   stroke: red;
   stroke-width: 4px;
 }
+
+.tooltip-donut {
+  background: white;
+  color: black;
+}
