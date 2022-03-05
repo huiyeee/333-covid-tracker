@@ -5,8 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script src="https://cdn.polyfill.io/v2/polyfill.min.js"></script>
     <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="http://d3js.org/topojson.v2.min.js"></script>
     <script src="https://rawgit.com/susielu/d3-annotation/master/d3-annotation.min.js"></script>
     <script src="./lib/countUp.umd.js"></script>
+    <script src="./lib/d3-simple-slider.js"></script>
     <link href="./style.css" rel="stylesheet" />
   </head>
   <body>
@@ -25,6 +27,13 @@
 
     <section>
       <svg class="us-map"></svg>
+      <div id = "block_container">
+        <div class="col-sm-2"><p id="value-time"></p></div>
+        <div class="col-sm"><div id="slider-time"></div></div>
+      </div>
+      <div id = "block_container">
+        Type: <select id="typeSelection" class="dropdown"></select><br>
+      </div>
     </section>
     <section>
       <div>
@@ -35,7 +44,7 @@
 
     <script>
       // Global variable for all data
-      let us_data, states_data, population_data;
+      let us_data, states_data, population_data, centroid, stateName;
       d3.csv("./data/us.csv").then((d) => {
         us_data = d;
         createCovidHistory(".covid-history");
@@ -46,6 +55,7 @@
       d3.csv("./data/us-states.csv").then((d) => {
         states_data = d;
         appeandSelect();
+        createUSMap(".us-map");
         drawStateLiineChart(".covid-trend", "Oregon", "Total");
         drawStateLiineChart(".covid-trend", "California", "Total");
       });
@@ -370,6 +380,180 @@
                 .append('option')
             .text(function (d) { return d; }) // text showed in the menu
             .attr("value", function (d) { return d; }) // corresponding value returned by the button
+      }
+
+      // US map
+      const createUSMap = (svgSelector) => {
+        let width = 960,
+        height = 500;
+        let projection = d3.geoAlbersUsa();
+        let path = d3.geoPath()
+          .projection(projection);
+        let svg = d3.selectAll(svgSelector)
+          .attr("width", width)
+          .attr("height", height);
+        let variableOptions = ["cases", "deaths"];
+        let dateVar;
+        let typeVar = variableOptions[0];
+        
+        // DropDown menu
+        d3.select("#typeSelection")
+          .selectAll('myOptions')
+          .data(variableOptions)
+          .enter()
+          .append('option')
+          .text(function (d) {return d; }) // text showed in the menu
+          .attr("value", function (d) { return d; })
+
+        // Declare scale vars
+        var colorScale, colorScaleDeath;
+        var date = [];
+        var dateDict = {};
+        var stateDict = {};
+        var popDict = {};
+        var caseDict = {};
+        var deathDict = {};
+
+        ready();
+
+        let us, states, centroid;
+        function getKeyByValue(object, value) {
+          return Object.keys(object).find(key => object[key] === value);
+        }
+
+        function drawSlide() {
+          var sliderTime = d3
+          .sliderBottom()
+          .min(0)
+          .max(date.length-1)
+          .step(1)
+          .width(450)
+          .ticks(0)
+          .default(1)
+          .on('onchange', val => {
+            d3.select('p#value-time').text(((states_data[sliderTime.value()].date)));
+            dateVar = val;
+            drawStates();
+          });
+          var gTime = d3
+            .select('div#slider-time')
+            .append('svg')
+            .attr('width', 500)
+            .attr('height', 100)
+            .append('g')
+            .attr('transform', 'translate(30,30)');
+
+          gTime.call(sliderTime);
+          d3.select('p#value-time').text((states_data[sliderTime.value()].date));
+        }
+
+        function drawStates() {
+          var div = d3.select("body").append("div")
+                      .attr("class", "tooltip-donut")
+                      .style("opacity", 0);   
+          svg.selectAll("path")
+            .attr("class", "states")
+            .data(topojson.feature(states, states.objects.usStates).features)
+            .join(
+              enter => enter
+              .append("path")
+              .attr("d", path)
+              .style("stroke", "#fff")
+              .style("stroke-width", "1")
+              .style("fill", "rgb(212, 212, 212)")
+              .on('mouseover', function (event,d) {
+                  var stateAbbr = d.properties.STATE_ABBR
+                  var stateName = getKeyByValue(stateDict,stateAbbr)
+                  // console.log(stateAbbr)
+                  // console.log(getKeyByValue(stateDict,stateAbbr))
+                  d3.select(this).transition()
+                      .duration('50')
+                      .attr('opacity', '.85');
+                  div.transition()
+                      .duration(50)
+                      .style("opacity", 1);
+                  var display;
+                  if(typeVar == "cases"){
+                    display = stateName + "<br>" 
+                              + "Total cases: " + caseDict[stateName] + "<br>" 
+                              + "Infected Rate: " + (100*caseDict[stateName]/popDict[stateName]).toFixed(2) + "%";
+                  }
+                  else{
+                    display = stateName + "<br>" 
+                              + "Total deaths: " + deathDict[stateName] + "<br>" 
+                              + "Death Rate: " + (100*deathDict[stateName]/popDict[stateName]).toFixed(2) + "%";
+                  }
+                  div.html(display)
+                      .style("left", (event.pageX + 10) + "px")
+                      .style("top", (event.pageY - 15) + "px");
+                })
+                .on('mouseout', function (d, i) {
+                  d3.select(this).transition()
+                      .duration('50')
+                      .attr('opacity', '1');
+                  div.transition()
+                      .duration('50')
+                      .style("opacity", 0);
+                })
+              ,
+              update => update
+              .style("fill", function(d) {
+                // Get data value
+                var start = dateDict[states_data[dateVar].date];
+                var counter = start;
+                while(states_data[counter].date == states_data[start].date){
+                  counter += 1;
+                  if(d.properties.STATE_ABBR == stateDict[states_data[counter].state]){
+                    if(typeVar == "cases"){
+                      caseDict[states_data[counter].state] = states_data[counter].cases;
+                      return colorScale(states_data[counter].cases/popDict[states_data[counter].state]);
+                    }
+                    else{
+                      deathDict[states_data[counter].state] = states_data[counter].deaths;
+                      return colorScaleDeath(states_data[counter].deaths/popDict[states_data[counter].state]);
+                    }
+                  }
+                }
+              }),
+            )
+        }
+
+        d3.select("#typeSelection").on("change", function(d) {
+            typeVar = d3.select(this).property("value")
+            drawStates();
+        })
+
+        async function ready() {
+          // load files async; store the values so we can use them later
+          states = await d3.json("./data/states.json");
+          centroid = await d3.json("./data/states-centroid-data.json");
+          stateName = await d3.csv("./data/stateName.csv")
+          for (let i = 0; i < stateName.length; i++) {
+            caseDict[stateName[i]["State"]] =  0
+            deathDict[stateName[i]["State"]] =  0
+            stateDict[stateName[i]["State"]] =  stateName[i]["Code"]
+          }
+
+          // Get all scales
+          colorScale = d3.scaleLinear()
+              .domain([0,0.42])
+              .range(["#d4d4d4","#ff0000"])
+          colorScaleDeath = d3.scaleLinear()
+              .domain([0,0.0055])
+              .range(["#d4d4d4","#ff0000"])
+          for(var state in centroid.features){
+            popDict[centroid.features[state].properties.name] = centroid.features[state].properties.population;
+          }
+          for (let i = 0; i < states_data.length; i++) {
+            if(!(states_data[i].date in dateDict)){
+              dateDict[states_data[i].date] = i;
+            }
+            date.push(states_data[i].date);
+          }
+          // console.log(stateDict)
+          drawStates();
+          drawSlide();
+        }
       }
     </script>
   </body>
