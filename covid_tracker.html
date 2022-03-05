@@ -36,6 +36,7 @@
         states_data = d;
         appeandSelect();
         drawStateLiineChart(".covid-trend", "Oregon", "Total");
+        drawStateLiineChart(".covid-trend", "California", "Total");
       });
       
 
@@ -119,6 +120,7 @@
 
       const drawStateLiineChart = (svgSelector, stateName, selectedOption) => {
         d3.selectAll(svgSelector + " > *").remove();
+        document.getElementById('selection').value = selectedOption;
 
         var margin = { top: 40, bottom: 40, left: 40, right: 80};
         var stateChartWidth = 700 - margin.left - margin.right;
