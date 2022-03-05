@@ -56,8 +56,6 @@
         states_data = d;
         appeandSelect();
         createUSMap(".us-map");
-        drawStateLiineChart(".covid-trend", "Oregon", "Total");
-        drawStateLiineChart(".covid-trend", "California", "Total");
       });
       
 
@@ -392,7 +390,7 @@
         let svg = d3.selectAll(svgSelector)
           .attr("width", width)
           .attr("height", height);
-        let variableOptions = ["cases", "deaths"];
+        let variableOptions = ["Cases", "Deaths"];
         let dateVar;
         let typeVar = variableOptions[0];
         
@@ -483,7 +481,7 @@
                               + "Total deaths: " + deathDict[stateName] + "<br>" 
                               + "Death Rate: " + (100*deathDict[stateName]/popDict[stateName]).toFixed(2) + "%";
                   }
-                  console.log(div)
+                  // console.log(div)
                   div.html(display)
                       .style("position", "fixed")
                       .style("left", (event.clientX + 10) + "px")
@@ -496,6 +494,11 @@
                   div.transition()
                       .duration('50')
                       .style("opacity", 0);
+                })
+                .on("click", function(event, d){
+                  var stateAbbr = d.properties.STATE_ABBR
+                  var stateName = getKeyByValue(stateDict,stateAbbr)
+                  drawStateLiineChart(".covid-trend", stateName, "Total")
                 })
               ,
               update => update
