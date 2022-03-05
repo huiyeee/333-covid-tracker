@@ -27,20 +27,29 @@
       <svg class="us-map"></svg>
     </section>
     <section>
+      <div>
+        Select: <select id="selection" class="dropdown"></select><br>
+      </div>
       <svg class="covid-trend"></svg>
     </section>
 
     <script>
       // Global variable for all data
-      let us_data, states_data;
+      let us_data, states_data, population_data;
       d3.csv("./data/us.csv").then((d) => {
         us_data = d;
         createCovidHistory(".covid-history");
       });
+      d3.csv("./data/state-population.csv").then((d) => {
+        population_data = d;
+      });
       d3.csv("./data/us-states.csv").then((d) => {
         states_data = d;
-        // console.log(states_data);
+        appeandSelect();
+        drawStateLiineChart(".covid-trend", "Oregon", "Total");
+        drawStateLiineChart(".covid-trend", "California", "Total");
       });
+      
 
       // Create Covid spread history
       const createCovidHistory = (svgSelector) => {
@@ -181,10 +190,187 @@
             .duration(4000)
             .ease(d3.easeLinear)
             .attr("stroke-dashoffset", 0);
-
-            console.log(special_points[start])
-        }
       };
+      }
+
+      const drawStateLiineChart = (svgSelector, stateName, selectedOption) => {
+        d3.selectAll(svgSelector + " > *").remove();
+        document.getElementById('selection').value = selectedOption;
+
+        var margin = { top: 40, bottom: 40, left: 40, right: 80};
+        var stateChartWidth = 700 - margin.left - margin.right;
+        var stateChartHeight = 350 - margin.top - margin.bottom;
+
+        // When the button is changed, run the updateChart function
+        d3.select("#selection").on("change", function(d) {
+            // recover the option that has been chosen
+            selectedOption = d3.select(this).property("value");
+            
+            drawStateLiineChart(".covid-trend", stateName, selectedOption)
+        })
+
+        var stateChartSvg = d3
+          .selectAll(svgSelector)
+          .attr("width", stateChartWidth + margin.left + margin.right)
+          .attr("height", stateChartHeight + margin.top + margin.bottom);
+
+        var stateChartG = stateChartSvg
+          .append("g")
+          .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        var timeParse = d3.timeParse("%Y-%m-%d");
+        var timeFormat = d3.timeFormat("%y %b");
+        var valueFormat = d3.format(".2s");
+
+        var filterd = states_data.filter(function(d){
+          return d.state == stateName
+        });
+        
+        var newData = [];
+
+        if(selectedOption == "Total"){
+          filterd.forEach((d, index) => {
+            var o = {};
+            o.date = timeParse(d.date);
+            o.cases = parseInt(d.cases);
+            o.deaths = parseInt(d.deaths);
+            newData.push(o);
+          });
+        }else if(selectedOption == "Daily"){
+          filterd.forEach((d, index) => {
+            var o = {};
+            o.date = timeParse(d.date);
+            if(index != 0){
+              o.cases = parseInt(d.cases - filterd[index - 1].cases);
+              o.deaths = parseInt(d.deaths - filterd[index - 1].deaths);
+            }else{
+              o.cases = parseInt(d.cases);
+              o.deaths = parseInt(d.deaths);
+            }
+            newData.push(o);
+          });
+        }else{
+          var population = population_data.filter(function(d){
+            return d.State == stateName
+          });
+          filterd.forEach((d, index) => {
+            var o = {};
+            o.date = timeParse(d.date);
+            if(o.date.getYear() == 120){
+
+              o.cases = parseInt(d.cases) / parseInt(population[0].pop2020.replace(/,/g, ''), 10);
+              o.deaths = parseInt(d.deaths) / parseInt(population[0].pop2020.replace(/,/g, ''), 10);
+            }else if(o.date.getYear() == 121){
+              o.cases = parseInt(d.cases) / parseInt(population[0].pop2021.replace(/,/g, ''), 10);
+              o.deaths = parseInt(d.deaths) / parseInt(population[0].pop2021.replace(/,/g, ''), 10);
+            }else{
+              o.cases = parseInt(d.cases) / parseInt(population[0].pop2022.replace(/,/g, ''), 10);
+              o.deaths = parseInt(d.deaths) / parseInt(population[0].pop2021.replace(/,/g, ''), 10);
+            }
+            newData.push(o);
+          });
+        }
+
+        stateChartSvg.append("text")
+            .attr("x", margin.left)             
+            .attr("y", margin.top - 10)
+            .style("font-size", "16px")
+            .text(stateName);
+
+        var stateChartX = d3
+          .scaleTime()
+          .domain(d3.extent(newData, (d) => d.date))
+          .range([0, stateChartWidth]);
+        var stateChartY = d3
+          .scaleLinear()
+          .domain([0, d3.max(newData, (d) => d.cases)])
+          .range([stateChartHeight, 0]);
+
+        var xaxis = d3
+          .axisBottom()
+          .scale(stateChartX)
+          .tickFormat(timeFormat)
+          .ticks(20);
+
+        var g_xaxis = stateChartG
+          .append("g")
+          .attr("class", "line-x-axis")
+          .attr("transform", "translate(0," + stateChartHeight + ")");
+
+        var yaxis = d3
+          .axisLeft()
+          .scale(stateChartY)
+          .tickFormat((d) => valueFormat(d))
+          .ticks(10);
+
+        var g_yaxis = stateChartG
+        .append("g")
+        .attr("class", "line-y-axis");
+
+        g_xaxis.call(xaxis).selectAll("text").style("text-anchor", "end").attr("transform", "rotate(-65)");
+        g_yaxis.call(yaxis);
+
+        stateChartG.append("path")
+          .datum(newData)
+          .attr("class", "line")
+          .attr(
+            "d",
+            d3
+              .line()
+              .x((d) => {
+                return stateChartX(d.date);
+              })
+              .y((d) => {
+                return stateChartY(d.cases);
+              })
+          )
+
+        stateChartG.append("path")
+          .datum(newData)
+          .attr("class", "death-line")
+          .attr(
+            "d",
+            d3
+              .line()
+              .x((d) => {
+                return stateChartX(d.date);
+              })
+              .y((d) => {
+                return stateChartY(d.deaths);
+              })
+          )
+
+        var caseTextPosY = stateChartY(newData[newData.length - 1].cases) + margin.top
+        if(newData[newData.length - 1].cases == 0){
+          caseTextPosY -= 20;
+        }
+        
+        stateChartSvg.append("text")
+          .attr("transform", "translate(" + (stateChartWidth + 45) + "," + caseTextPosY + ")")
+          .attr("dy", ".35em")
+          .attr("text-anchor", "start")
+          .style("fill", "steelblue")
+          .text("Cases")
+
+        stateChartSvg.append("text")
+          .attr("transform", "translate(" + (stateChartWidth + 45) + "," + (stateChartY(newData[newData.length - 1].deaths) + margin.top) + ")")
+          .attr("dy", ".35em")
+          .attr("text-anchor", "start")
+          .style("fill", "red")
+          .text("Deaths")
+      }
+
+      function appeandSelect(){
+        let variableOptions = ["Total", "Daily", "Per capita"];
+
+        d3.select("#selection")
+            .selectAll('myOptions')
+                .data(variableOptions)
+            .enter()
+                .append('option')
+            .text(function (d) { return d; }) // text showed in the menu
+            .attr("value", function (d) { return d; }) // corresponding value returned by the button
+      }
     </script>
   </body>
 </html>
