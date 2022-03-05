@@ -40,6 +40,9 @@
     <div class="col-sm-2"><p id="value-time"></p></div>
     <div class="col-sm"><div id="slider-time"></div></div>
   </div>
+  <div id = "block_container">
+    Type: <select id="typeSelection" class="dropdown"></select><br>
+  </div>
 
   <!-- d3 v7 integration -->
   <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -57,16 +60,29 @@
     let svg = d3.selectAll("svg")
       .attr("width", width)
       .attr("height", height);
-    let sizeVar, colorVar, dateVar;
+    let variableOptions = ["cases", "deaths"];
+    let dateVar;
+    let typeVar = variableOptions[0];
+    
+
+    // DropDown menu
+    d3.select("#typeSelection")
+      .selectAll('myOptions')
+     	.data(variableOptions)
+      .enter()
+    	.append('option')
+      .text(function (d) {return d; }) // text showed in the menu
+      .attr("value", function (d) { return d; })
 
     // Declare scale vars
-    var colorScale;
+    var colorScale, colorScaleDeath;
     var covid;
     var date = [];
     var dateDict = {};
     var stateDict = {};
     var popDict = {};
     var caseDict = {};
+    var deathDict = {};
 
     // call the function that draws
     ready();
@@ -81,7 +97,7 @@
       var sliderTime = d3
       .sliderBottom()
       .min(0)
-      .max(date.length)
+      .max(date.length-1)
       .step(1)
       .width(450)
       .ticks(0)
@@ -128,9 +144,17 @@
               div.transition()
                   .duration(50)
                   .style("opacity", 1);
-              var display = stateName + "<br>" 
+              var display;
+              if(typeVar == "cases"){
+                display = stateName + "<br>" 
                           + "Total cases: " + caseDict[stateName] + "<br>" 
                           + "Infected Rate: " + (100*caseDict[stateName]/popDict[stateName]).toFixed(2) + "%";
+              }
+              else{
+                display = stateName + "<br>" 
+                          + "Total deaths: " + deathDict[stateName] + "<br>" 
+                          + "Death Rate: " + (100*deathDict[stateName]/popDict[stateName]).toFixed(2) + "%";
+              }
               div.html(display)
                   .style("left", (event.pageX + 10) + "px")
                   .style("top", (event.pageY - 15) + "px");
@@ -152,13 +176,24 @@
             while(covid[counter].date == covid[start].date){
               counter += 1;
               if(d.properties.STATE_ABBR == stateDict[covid[counter].state]){
-                caseDict[covid[counter].state] = covid[counter].cases;
-                return colorScale(covid[counter].cases/popDict[covid[counter].state]);
+                if(typeVar == "cases"){
+                  caseDict[covid[counter].state] = covid[counter].cases;
+                  return colorScale(covid[counter].cases/popDict[covid[counter].state]);
+                }
+                else{
+                  deathDict[covid[counter].state] = covid[counter].deaths;
+                  return colorScaleDeath(covid[counter].deaths/popDict[covid[counter].state]);
+                }
               }
             }
           }),
         )
     }
+
+    d3.select("#typeSelection").on("change", function(d) {
+        typeVar = d3.select(this).property("value")
+        drawStates();
+    })
 
     async function ready() {
       // load files async; store the values so we can use them later
@@ -168,14 +203,18 @@
       stateName = await d3.csv("stateName.csv")
       for (let i = 0; i < stateName.length; i++) {
         caseDict[stateName[i]["State"]] =  0
+        deathDict[stateName[i]["State"]] =  0
         stateDict[stateName[i]["State"]] =  stateName[i]["Code"]
       }
 
       // Get all scales
-      for(var state in centroid.features){
-        colorScale = d3.scaleLinear()
+      colorScale = d3.scaleLinear()
           .domain([0,0.6])
           .range(["#d4d4d4","#ff0000"])
+      colorScaleDeath = d3.scaleLinear()
+          .domain([0,0.01])
+          .range(["#d4d4d4","#ff0000"])
+      for(var state in centroid.features){
         popDict[centroid.features[state].properties.name] = centroid.features[state].properties.population;
       }
       for (let i = 0; i < covid.length; i++) {
