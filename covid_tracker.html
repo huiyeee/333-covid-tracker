@@ -446,11 +446,33 @@
         }
 
         function drawStates() {
+          const zoom = d3.zoom()
+          .scaleExtent([1, 8])
+          .on("zoom", zoomed);
+
+          function zoomed(event) {
+          const {transform} = event;
+            svg.attr("transform", transform);
+            svg.attr("stroke-width", 1 / transform.k);
+          }
+
+          function reset() {
+              svg.select(".states").transition().style("fill", null);
+              svg.transition().duration(750).call(
+                zoom.transform,
+                d3.zoomIdentity,
+                d3.zoomTransform(svg.node()).invert([width / 2, height / 2])
+              );
+          }
+          
+          svg.on("click", reset);
+
           var div = d3.select(".us-map-sec").append("div")
                       .attr("class", "tooltip-donut")
                       .style("opacity", 0);   
           svg.selectAll("path")
             .attr("class", "states")
+            .attr("viewBox", [0, 0, width, height])
             .data(topojson.feature(states, states.objects.usStates).features)
             .join(
               enter => enter
@@ -499,6 +521,22 @@
                   var stateAbbr = d.properties.STATE_ABBR
                   var stateName = getKeyByValue(stateDict,stateAbbr)
                   drawStateLiineChart(".covid-trend", stateName, "Total")
+
+                  path = d3.geoPath()
+                  console.log(d);
+                  const [[x0, y0], [x1, y1]] = path.bounds(d);
+                  event.stopPropagation();
+                  svg.select(".states").transition().style("fill", null);
+                  d3.select(this).transition().style("fill", "red");
+                  svg.transition().duration(750).call(
+                    zoom.transform,
+                    d3.zoomIdentity
+                      .translate(width / 2, height / 2)
+                      .scale(Math.min(1.5, 0.9 / Math.max((x1 - x0) / width, (y1 - y0) / height)))
+                      .translate(-(x0 + x1) / 2, -(y0 + y1) / 2),
+                    d3.pointer(event, svg.node())
+                  );
+                  console.log(0.9 / Math.max((x1 - x0) / width, (y1 - y0) / height))
                 })
               ,
               update => update
