@@ -93,3 +93,9 @@ h2 {
   text-shadow: 0 0 80px rgba(255,255,255,.5);
   color: #ab2346;
 }
+
+.death-line{
+  fill: none;
+  stroke: red;
+  stroke-width: 4px;
+}
