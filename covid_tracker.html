@@ -25,22 +25,29 @@
       <svg class="covid-history"></svg>
     </section>
 
-    <section>
-      <svg class="us-map"></svg>
-      <div id = "block_container">
-        <div class="col-sm-2"><p id="value-time"></p></div>
-        <div class="col-sm"><div id="slider-time"></div></div>
+    <div class="us-states">
+      <h2 class="title">
+        What happened to every state?
+      </h2>
+      <div class="us-states-charts">
+        <section class="us-map-sec">
+          <svg class="us-map"></svg>
+          <div id = "block_container">
+            <div class="col-sm-2"><p id="value-time"></p></div>
+            <div class="col-sm"><div id="slider-time"></div></div>
+          </div>
+          <div id = "block_container">
+            Type: <select id="typeSelection" class="dropdown"></select><br>
+          </div>
+        </section>
+        <section class="state-line-chart">
+          <div>
+            Select: <select id="selection" class="dropdown"></select><br>
+          </div>
+          <svg class="covid-trend"></svg>
+        </section>
       </div>
-      <div id = "block_container">
-        Type: <select id="typeSelection" class="dropdown"></select><br>
-      </div>
-    </section>
-    <section class="us-map-sec">
-      <div>
-        Select: <select id="selection" class="dropdown"></select><br>
-      </div>
-      <svg class="covid-trend"></svg>
-    </section>
+    </div>
 
     <script>
       // Global variable for all data
@@ -395,7 +402,7 @@
 
       // US map
       const createUSMap = (svgSelector) => {
-        let width = 960,
+        let width = 900,
         height = 500;
         let projection = d3.geoAlbersUsa();
         let path = d3.geoPath()

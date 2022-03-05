@@ -104,3 +104,22 @@ h2 {
   background: white;
   color: black;
 }
+
+.us-states {
+  margin-top: 100px;
+}
+
+.us-states-charts {
+  display: flex;
+  margin: 80px 10px;
+}
+
+.us-map-sec {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.state-line-chart {
+  margin-top: 50px;
+  margin-left: 0px;
+}
