@@ -5,13 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script src="https://cdn.polyfill.io/v2/polyfill.min.js"></script>
     <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://rawgit.com/susielu/d3-annotation/master/d3-annotation.min.js"></script>
+    <script src="./lib/countUp.umd.js"></script>
     <link href="./style.css" rel="stylesheet" />
   </head>
   <body>
     <h1>US COVID TRACKER</h1>
-    <section>
+    <section class="covid-his-sec">
+      <h2 class="title">
+        What happened today?
+      </h2>
+      <p class="history-description">No one can imagine the impact of COVID in 2020 Winter. Let's explore the history of COVID spread...</p>
+      <div class="count">
+        <span>Total cases: <span>
+        <span id="countup">0</span>
+      </div>
       <svg class="covid-history"></svg>
     </section>
+
     <section>
       <svg class="us-map"></svg>
     </section>
@@ -33,8 +44,8 @@
 
       // Create Covid spread history
       const createCovidHistory = (svgSelector) => {
-        const margin = { top: 40, bottom: 20, left: 320, right: 0 };
-        const width = 1500 - margin.left - margin.right;
+        const margin = { top: 40, bottom: 20, left: 40, right: 40};
+        const width = 1200 - margin.left - margin.right;
         const height = 600 - margin.top - margin.bottom;
 
         const svg = d3
@@ -48,7 +59,7 @@
           .attr("transform", `translate(${margin.left},${margin.top})`);
 
         const timeParse = d3.timeParse("%Y-%m-%d");
-        const timeFormat = d3.timeFormat("%b-%d");
+        const timeFormat = d3.timeFormat("%y %b");
         const valueFormat = d3.format(".2s");
         us_data.forEach((d) => {
           d.date = timeParse(d.date);
@@ -69,7 +80,7 @@
         const xaxis = d3.axisBottom().scale(x).tickFormat(timeFormat).ticks(20);
         const g_xaxis = g
           .append("g")
-          .attr("class", "x axis")
+          .attr("class", "line-x-axis")
           .attr("transform", "translate(0," + height + ")");
 
         const yaxis = d3
@@ -77,39 +88,103 @@
           .scale(y)
           .tickFormat((d) => valueFormat(d))
           .ticks(10);
-        const g_yaxis = g.append("g").attr("class", "y axis");
+        const g_yaxis = g.append("g").attr("class", "line-y-axis");
 
         g_xaxis.call(xaxis);
         g_yaxis.call(yaxis);
+        
+        let special_points;
+        d3.csv("./data/special_points.csv").then((d) => {
+          special_points = d;
+          console.log(special_points);
+          createAnimation();
+        });
 
-        g.append("path")
-          .datum(us_data)
-          .attr("class", "line")
-          .attr(
-            "d",
-            d3
-              .line()
-              .x((d) => {
-                return x(d.date);
-              })
-              .y((d) => {
-                return y(d.cases);
-              })
-          )
+        const createAnimation = () => {
+          for (let i = 1; i < special_points.length; i++) {
+            setTimeout(() => {
+              createPeriodicAnimation(i - 1, i);
 
-          let path = g.selectAll(".line")
+              // Update description
+              let text = document.querySelector(".history-description");
+              text.classList.add('hide');
+              setTimeout(() => {
+                text.innerHTML = special_points[i - 1].description;
+                text.classList.remove('hide');
+              }, 1000)
+            }, (i + 1) * 4000);
+          }
+        }
+
+        const createPeriodicAnimation = (start, end) => {
+          // Set countUp
+          const options = {
+            startVal: special_points[start].cases,
+            duration: 4,
+          };
+          const cnt = new countUp.CountUp('countup', special_points[end].cases, options);
+          if (!cnt.error) {
+            cnt.start();
+          } else {
+            console.error(cnt.error);
+          }
+
+          // Set annotation
+          const annotations = [
+            {
+              connector: {
+                end: "dot",        
+                type: "line",      
+                lineType : "vertical",   
+                endScale: 2    
+              },
+              note: {
+                label: special_points[start].label,
+                title: special_points[start].title
+              },
+              x: x(timeParse(special_points[start].date)),
+              y: y(special_points[start].cases),
+              dy: parseInt(special_points[start].dy),
+              dx: parseInt(special_points[start].dx),
+              color: "#D3E0EE"
+            }
+          ]
+
+          // Add annotation to the chart
+          const makeAnnotations = d3.annotation().annotations(annotations)
+          g.append("g").attr("class", "fade-in").call(makeAnnotations)
+          
+          // Add line
+          g.append("path")
+            .datum(us_data.slice(special_points[start].index, special_points[end].index))
+            .attr("class", "line")
+            .attr("id", "line" + start)
+            .attr(
+              "d",
+              d3
+                .line()
+                .x((d) => {
+                  return x(d.date);
+                })
+                .y((d) => {
+                  return y(d.cases);
+                })
+            );
+          
+          let path = g.selectAll("#line" + start);
           let totalLength = path.node().getTotalLength();
 
           d3.select(path.node())
-          .attr("stroke-dasharray", totalLength + " " + totalLength ) 
-          .attr("stroke-dashoffset", totalLength)
-          .transition()
-          .duration(10000)
-          .ease(d3.easeLinear)
-          .attr("stroke-dashoffset", 0);
+            .attr("stroke-dasharray", totalLength + " " + totalLength)
+            .attr("stroke-dashoffset", totalLength)
+            .transition()
+            .duration(4000)
+            .ease(d3.easeLinear)
+            .attr("stroke-dashoffset", 0);
+
+            console.log(special_points[start])
+        }
       };
-
-
     </script>
   </body>
 </html>
