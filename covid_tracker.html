@@ -342,7 +342,7 @@
           .attr("class", "line-y-axis");
 
           g_xaxis.call(xaxis).selectAll("text").style("text-anchor", "end").attr("transform", "rotate(-65)");
-          g_yaxis.call(yaxis);
+          g_yaxis.transition().duration(500).call(yaxis);
 
           if(type == "Cases"){
             stateChartG.append("path")
