@@ -101,6 +101,90 @@ h2 {
 }
 
 .tooltip-donut {
-  background: white;
-  color: black;
+  padding: 15px;
+  background: #191516;
+  color: #C9DAEA;
+  text-align: left;
+  border-radius: 10px;
+}
+
+.us-states {
+  margin-top: 100px;
+}
+
+.us-states-charts {
+  display: flex;
+  margin: 80px 10px 0 10px;
+}
+
+.us-map-sec {
+  margin-left: 20px;
+  margin-right: 50px;
+}
+
+.us-map-div {
+  overflow: hidden;
+}
+
+.state-line-chart {
+  margin-top: 50px;
+  margin-left: 0px;
+}
+
+.slider .track {
+  background: tomato;
+  height: 5px;
+}
+
+select {
+  margin-left: 10px;
+  background-color: #AB2346;
+  color: #C9DAEA;
+  padding-left: 10px;
+  width: 100px;
+  height: 40px;
+  border: none;
+  font-size: 1em;
+  box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2);
+  -webkit-appearance: button;
+  appearance: button;
+  outline: none;
+}
+
+#value-time {
+  margin: 0;
+}
+
+.covid-trend {
+  height: 350px;
+  margin-bottom: 0;
+}
+
+.select-all {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 200px;
+}
+
+.select-type {
+  display: inline-block;
+  margin-left: 400px;
+}
+
+.select-unit {
+  display: inline-block;
+}
+
+.select-unit {
+  margin-right: 500px;
+}
+
+.state-name {
+  color: #C9DAEA;
+  font-size: 32px;
+}
+
+.hover-sec {
+  background-color: black;
+  color: white;
 }
