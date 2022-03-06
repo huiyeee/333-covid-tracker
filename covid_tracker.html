@@ -396,7 +396,7 @@
         
       }
 
-      let selectedStateName = "";
+      let selectedStateName = "Washington";
       function appeandSelect(){
         let variableOptions = ["Total", "Daily", "Per capita"];
 
@@ -441,6 +441,7 @@
         var caseDict = {};
         var deathDict = {};
 
+        ready();
         let us, states, centroid;
         function getKeyByValue(object, value) {
           return Object.keys(object).find(key => object[key] === value);
@@ -548,9 +549,9 @@
                 // if (!states_data[dateVar]) return "black";
                 var start = dateDict[states_data[dateVar].date];
                 var counter = start;
-                while(states_data[counter] && states_data[counter].date == states_data[start].date){
-                  if(states_data[counter] && d.properties.STATE_ABBR == stateDict[states_data[counter].state]){
-                    if(typeVar == "cases"){
+                while(states_data[counter].date == states_data[start].date){
+                  if(d.properties.STATE_ABBR == stateDict[states_data[counter].state]){
+                    if(typeVar == "Cases"){
                       caseDict[states_data[counter].state] = states_data[counter].cases;
                       return colorScale(states_data[counter].cases/popDict[states_data[counter].state]);
                     }
@@ -588,13 +589,14 @@
           svg.attr("stroke-width", 1 / transform.k);
         }
 
-        d3.select("#typeSelection").on("change", function(d) {
-            typeVar = d3.select(this).property("value")
+        let typeSelection = document.querySelector("#typeSelection");
+        typeSelection.addEventListener("change", ()=>{
+            console.log(typeSelection)
+            typeVar = typeSelection.value;
             drawStates();
             drawStateLineChart(".covid-trend", selectedStateName, "Total", typeVar)
-        })
+        });
 
-        ready();
         async function ready() {
           // load files async; store the values so we can use them later
           states = await d3.json("./data/states.json");
