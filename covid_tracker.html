@@ -29,23 +29,30 @@
       <h2 class="title">
         What happened to every state?
       </h2>
+      <h3 class="state-name">Washington</h3>
       <div class="us-states-charts">
         <section class="us-map-sec">
-          <svg class="us-map"></svg>
+          <div class="us-map-div">
+            <svg class="us-map"></svg>
+          </div>
           <div id = "block_container">
             <div class="col-sm-2"><p id="value-time"></p></div>
             <div class="col-sm"><div id="slider-time"></div></div>
           </div>
-          <div id = "block_container">
-            Type: <select id="typeSelection" class="dropdown"></select><br>
-          </div>
         </section>
         <section class="state-line-chart">
-          <div>
-            Select: <select id="selection" class="dropdown"></select><br>
-          </div>
           <svg class="covid-trend"></svg>
+  
         </section>
+      </div>
+
+      <div class="select-all">
+        <div class="select-type">
+          <span>Type:</span><select id="typeSelection" class="dropdown"></select><br>
+        </div>
+        <div class="select-unit">
+          Select: <select id="selection" class="dropdown"></select><br>
+        </div>
       </div>
     </div>
 
@@ -63,6 +70,7 @@
         states_data = d;
         appeandSelect();
         createUSMap(".us-map");
+        drawStateLineChart(".covid-trend", "Washington", "Total", "Cases")
       });
       
 
@@ -291,7 +299,8 @@
               .attr("x", margin.left)             
               .attr("y", margin.top - 10)
               .style("font-size", "16px")
-              .text(stateName);
+              .style("fill", "#C9DAEA")
+              .text(selectedOption);
 
           var stateChartX = d3
             .scaleTime()
@@ -357,7 +366,7 @@
               .attr("transform", "translate(" + (stateChartWidth + 45) + "," + caseTextPosY + ")")
               .attr("dy", ".35em")
               .attr("text-anchor", "start")
-              .style("fill", "steelblue")
+              .style("fill", "#03F7EB")
               .text("Cases")
           }else{
             stateChartG.append("path")
@@ -387,9 +396,9 @@
         
       }
 
+      let selectedStateName = "";
       function appeandSelect(){
         let variableOptions = ["Total", "Daily", "Per capita"];
-        var selectedStateName = "";
 
         d3.select("#selection")
             .selectAll('myOptions')
@@ -402,7 +411,7 @@
 
       // US map
       const createUSMap = (svgSelector) => {
-        let width = 900,
+        let width = 860,
         height = 500;
         let projection = d3.geoAlbersUsa();
         let path = d3.geoPath()
@@ -411,7 +420,7 @@
           .attr("width", width)
           .attr("height", height);
         let variableOptions = ["Cases", "Deaths"];
-        let dateVar;
+        let dateVar = 0;
         let typeVar = variableOptions[0];
         
         // DropDown menu
@@ -432,22 +441,24 @@
         var caseDict = {};
         var deathDict = {};
 
-        ready();
-
         let us, states, centroid;
         function getKeyByValue(object, value) {
           return Object.keys(object).find(key => object[key] === value);
         }
 
+        var div = d3.select(".us-map-sec").append("div")
+                      .attr("class", "tooltip-donut")
+                      .style("opacity", 0); 
+
         function drawSlide() {
           var sliderTime = d3
           .sliderBottom()
           .min(0)
-          .max(date.length-1)
+          .max(date.length - 1)
           .step(1)
           .width(450)
           .ticks(0)
-          .default(1)
+          .default(0)
           .on('onchange', val => {
             d3.select('p#value-time').text(((states_data[sliderTime.value()].date)));
             dateVar = val;
@@ -457,7 +468,7 @@
             .select('div#slider-time')
             .append('svg')
             .attr('width', 500)
-            .attr('height', 100)
+            .attr('height', 60)
             .append('g')
             .attr('transform', 'translate(30,30)');
 
@@ -465,10 +476,7 @@
           d3.select('p#value-time').text((states_data[sliderTime.value()].date));
         }
 
-        function drawStates() {
-          var div = d3.select(".us-map-sec").append("div")
-                      .attr("class", "tooltip-donut")
-                      .style("opacity", 0);   
+        function drawStates() {  
           svg.selectAll("path")
             .attr("class", "states")
             .data(topojson.feature(states, states.objects.usStates).features)
@@ -478,7 +486,10 @@
               .attr("d", path)
               .style("stroke", "#fff")
               .style("stroke-width", "1")
-              .style("fill", "rgb(212, 212, 212)")
+              .style("fill", (d) => {
+                if (d.properties.STATE_ABBR != "WA") return "black";
+                else return "rgb(212, 212, 212)"
+              })
               .on('mouseover', function (event,d) {
                   var stateAbbr = d.properties.STATE_ABBR
                   var stateName = getKeyByValue(stateDict,stateAbbr)
@@ -491,19 +502,15 @@
                       .duration(50)
                       .style("opacity", 1);
                   var display;
-                  if(typeVar == "cases"){
-                    display = stateName + "<br>" 
+                  display = stateName + "<br>" 
                               + "Total cases: " + caseDict[stateName] + "<br>" 
-                              + "Infected Rate: " + (100*caseDict[stateName]/popDict[stateName]).toFixed(2) + "%";
-                  }
-                  else{
-                    display = stateName + "<br>" 
                               + "Total deaths: " + deathDict[stateName] + "<br>" 
+                              + "Infected Rate: " + (100*caseDict[stateName]/popDict[stateName]).toFixed(2) + "%"  + "<br>"
                               + "Death Rate: " + (100*deathDict[stateName]/popDict[stateName]).toFixed(2) + "%";
-                  }
                   // console.log(div)
                   div.html(display)
                       .style("position", "fixed")
+                      .style("fill", "white")
                       .style("left", (event.clientX + 10) + "px")
                       .style("top", (event.clientY - 15) + "px");
                 })
@@ -518,18 +525,31 @@
                 .on("click", function(event, d){
                   var stateAbbr = d.properties.STATE_ABBR
                   var stateName = getKeyByValue(stateDict,stateAbbr)
-                  selectedStateName = stateName
-                  drawStateLineChart(".covid-trend", stateName, "Total", typeVar)
+                  const [[x0, y0], [x1, y1]] = path.bounds(d);
+                  event.stopPropagation();
+                  svg.selectAll("path").style("fill", null);
+                  d3.select(this).style("fill", "#03F7EB");
+                  svg.transition().duration(750).call(
+                    zoom.transform,
+                    d3.zoomIdentity
+                      .translate(width / 2, height / 2)
+                      .scale(Math.min(1.5, 0.9 / Math.max((x1 - x0) / width, (y1 - y0) / height)))
+                      .translate(-(x0 + x1) / 2, -(y0 + y1) / 2 ),
+                    d3.pointer(event, svg.node())
+                  )
+                  document.querySelector(".state-name").innerText = stateName;   
+                  selectedStateName = stateName;
+                  drawStateLineChart(".covid-trend", stateName, "Total", typeVar);
                 })
               ,
               update => update
               .style("fill", function(d) {
                 // Get data value
+                // if (!states_data[dateVar]) return "black";
                 var start = dateDict[states_data[dateVar].date];
                 var counter = start;
-                while(states_data[counter].date == states_data[start].date){
-                  counter += 1;
-                  if(d.properties.STATE_ABBR == stateDict[states_data[counter].state]){
+                while(states_data[counter] && states_data[counter].date == states_data[start].date){
+                  if(states_data[counter] && d.properties.STATE_ABBR == stateDict[states_data[counter].state]){
                     if(typeVar == "cases"){
                       caseDict[states_data[counter].state] = states_data[counter].cases;
                       return colorScale(states_data[counter].cases/popDict[states_data[counter].state]);
@@ -539,9 +559,33 @@
                       return colorScaleDeath(states_data[counter].deaths/popDict[states_data[counter].state]);
                     }
                   }
+                  counter += 1;
                 }
               }),
             )
+        }
+
+        const zoom = d3.zoom()
+            .scaleExtent([1, 8])
+            .on("zoom", zoomed);
+
+        svg.call(zoom);
+        document.querySelector(".us-map-sec").addEventListener("click",reset);
+
+        function reset() {
+          // svg.transition().style("fill", null);
+          svg.transition().duration(750).call(
+            zoom.transform,
+            d3.zoomIdentity,
+            d3.zoomTransform(svg.node()).invert([width / 2, height / 2])
+          );
+          drawStates();
+        }
+
+        function zoomed(event) {
+          const {transform} = event;
+          svg.attr("transform", transform);
+          svg.attr("stroke-width", 1 / transform.k);
         }
 
         d3.select("#typeSelection").on("change", function(d) {
@@ -550,6 +594,7 @@
             drawStateLineChart(".covid-trend", selectedStateName, "Total", typeVar)
         })
 
+        ready();
         async function ready() {
           // load files async; store the values so we can use them later
           states = await d3.json("./data/states.json");
@@ -566,7 +611,7 @@
               .domain([0,0.42])
               .range(["#d4d4d4","#ff0000"])
           colorScaleDeath = d3.scaleLinear()
-              .domain([0,0.0055])
+              .domain([0,0.0040])
               .range(["#d4d4d4","#ff0000"])
           for(var state in centroid.features){
             popDict[centroid.features[state].properties.name] = centroid.features[state].properties.population;
@@ -577,7 +622,6 @@
             }
             date.push(states_data[i].date);
           }
-          // console.log(stateDict)
           drawStates();
           drawSlide();
         }
