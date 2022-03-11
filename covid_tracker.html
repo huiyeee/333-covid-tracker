@@ -553,6 +553,7 @@
                   if(d.properties.STATE_ABBR == stateDict[states_data[counter].state]){
                     if(typeVar == "Cases"){
                       caseDict[states_data[counter].state] = states_data[counter].cases;
+                      deathDict[states_data[counter].state] = states_data[counter].deaths;
                       return colorScale(states_data[counter].cases/popDict[states_data[counter].state]);
                     }
                     else{
