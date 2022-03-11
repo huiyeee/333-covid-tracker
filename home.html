@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script src="https://cdn.polyfill.io/v2/polyfill.min.js"></script>
     <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="http://d3js.org/topojson.v2.min.js"></script>
+    <script src="https://d3js.org/topojson.v2.min.js"></script>
     <script src="https://rawgit.com/susielu/d3-annotation/master/d3-annotation.min.js"></script>
     <script src="./lib/countUp.umd.js"></script>
     <script src="./lib/d3-simple-slider.js"></script>
@@ -273,7 +273,7 @@
               }
               newData.push(o);
             });
-          }else{
+          }else if(selectedOption == "Total cases per capita"){
             var population = population_data.filter(function(d){
               return d.State == stateName
             });
@@ -281,7 +281,6 @@
               var o = {};
               o.date = timeParse(d.date);
               if(o.date.getYear() == 120){
-
                 o.cases = parseInt(d.cases) / parseInt(population[0].pop2020.replace(/,/g, ''), 10);
                 o.deaths = parseInt(d.deaths) / parseInt(population[0].pop2020.replace(/,/g, ''), 10);
               }else if(o.date.getYear() == 121){
@@ -290,6 +289,33 @@
               }else{
                 o.cases = parseInt(d.cases) / parseInt(population[0].pop2022.replace(/,/g, ''), 10);
                 o.deaths = parseInt(d.deaths) / parseInt(population[0].pop2021.replace(/,/g, ''), 10);
+              }
+              newData.push(o);
+            });
+          }else{
+            var population = population_data.filter(function(d){
+              return d.State == stateName
+            });
+            filterd.forEach((d, index) => {
+              var o = {};
+              o.date = timeParse(d.date);
+              if(index != 0){
+                var dailyCases = parseInt(d.cases - filterd[index - 1].cases);
+                var dailyDeaths = parseInt(d.deaths - filterd[index - 1].deaths);
+              }else{
+                var dailyCases = parseInt(d.cases);
+                var dailyDeaths = parseInt(d.deaths);
+              }
+
+              if(o.date.getYear() == 120){
+                o.cases = dailyCases / parseInt(population[0].pop2020.replace(/,/g, ''), 10);
+                o.deaths = dailyDeaths / parseInt(population[0].pop2020.replace(/,/g, ''), 10);
+              }else if(o.date.getYear() == 121){
+                o.cases = dailyCases / parseInt(population[0].pop2021.replace(/,/g, ''), 10);
+                o.deaths = dailyDeaths / parseInt(population[0].pop2021.replace(/,/g, ''), 10);
+              }else{
+                o.cases = dailyCases / parseInt(population[0].pop2022.replace(/,/g, ''), 10);
+                o.deaths = dailyDeaths / parseInt(population[0].pop2021.replace(/,/g, ''), 10);
               }
               newData.push(o);
             });
@@ -398,7 +424,7 @@
 
       let selectedStateName = "Washington";
       function appeandSelect(){
-        let variableOptions = ["Total", "Daily", "Per capita"];
+        let variableOptions = ["Total", "Daily", "Total cases per capita", "Daily cases per capita"];
 
         d3.select("#selection")
             .selectAll('myOptions')
